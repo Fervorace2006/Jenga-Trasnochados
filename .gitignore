@@ -105,3 +105,16 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Ignorar toda la carpeta de Vuforia
+Assets/Vuforia/
+Assets/VuforiaEngine/
+Assets/Plugins/Vuforia/
+*.unitypackage
+
+# Archivos grandes de Vuforia
+*.tgz
+*.unitypackage
+Packages/com.ptc.vuforia.engine-*/
+Assets/Vuforia/
+Assets/VuforiaEngine/
