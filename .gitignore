@@ -118,3 +118,8 @@ Assets/Plugins/Vuforia/
 Packages/com.ptc.vuforia.engine-*/
 Assets/Vuforia/
 Assets/VuforiaEngine/
+
+
+# Archivos generados al compilar con IL2CPP/Burst
+/*_BackUpThisFolder_ButDontShipItWithYourGame/
+/*_BurstDebugInformation_DoNotShip/
