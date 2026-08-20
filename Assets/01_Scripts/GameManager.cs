@@ -18,8 +18,9 @@ public class GameManager : MonoBehaviour
     private int colorDado = -1;
     private TextMeshProUGUI textoDado;
     private Button botonDado;
-
+    // Arrays estáticos con los nombres y colores de los tres colores posibles.
     private static readonly string[] NombresColores = { "AZUL", "ROJO", "VERDE" };
+    // Colores del dado en formato RGBA 
     private static readonly Color[] ColoresDado =
     {
         new Color(0.10f, 0.40f, 0.95f, 1f),
@@ -56,7 +57,7 @@ public class GameManager : MonoBehaviour
         CrearInterfazDado();
         ActualizarInterfaz();
     }
-
+    //Se monitorea la torre para detectar caídas.
     private void Update()
     {
         if (!huboMovimiento || juegoTerminado || generadorTorre == null) return;
@@ -70,7 +71,7 @@ public class GameManager : MonoBehaviour
 
         if (bloquesCaidos >= 3) JugadorPerdio();
     }
-
+    
     public void SetTrackingEstable(bool estado)
     {
         arSeguimientoEstable = estado;
@@ -79,7 +80,7 @@ public class GameManager : MonoBehaviour
         if (!estado && generadorTorre != null) generadorTorre.EstablecerFisica(false);
         ActualizarInterfaz();
     }
-
+    //Avanza al siguiente turno (1 - 2 - 3)
     public void SiguienteTurno()
     {
         if (juegoTerminado) return;
@@ -108,6 +109,7 @@ public class GameManager : MonoBehaviour
         ReiniciarDado();
     }
 
+    //Valida si el bloque seleccionado cumple con el color que salió en el dado.
     public bool ValidarColor(BloqueJenga bloque, out string motivo)
     {
         if (colorDado < 0)
@@ -124,6 +126,7 @@ public class GameManager : MonoBehaviour
         return true;
     }
 
+    //Lanza el dado: elige un color aleatorio y actualiza la UI.
     public void LanzarDado()
     {
         if (juegoTerminado || colorDado >= 0) return;
@@ -137,13 +140,16 @@ public class GameManager : MonoBehaviour
         if (textoEstado != null) textoEstado.text = $"Retira un bloque {NombresColores[colorDado]}.";
     }
 
+    //Reinicia el dado para el siguiente turno (limpia el color y reactiva el botón).
+
     private void ReiniciarDado()
     {
         colorDado = -1;
         if (textoDado != null) { textoDado.text = "Lanza el dado"; textoDado.color = Color.white; }
         if (botonDado != null) botonDado.interactable = true;
     }
-
+    //Crea dinámicamente la interfaz del dado (panel, texto y botón) en el Canvas.
+    // Se ejecuta en Start para asegurar que exista la UI.
     private void CrearInterfazDado()
     {
         Canvas canvas = FindFirstObjectByType<Canvas>();
@@ -193,6 +199,7 @@ public class GameManager : MonoBehaviour
         rectEtiqueta.offsetMin = rectEtiqueta.offsetMax = Vector2.zero;
     }
 
+    //Notifica al jugador que su movimiento es inválido (por color incorrecto u otra razón).
     public void MovimientoInvalido(string motivo = "")
     {
         string mensaje = string.IsNullOrEmpty(motivo) ? "¡Movimiento inválido! Intenta con otro bloque." : motivo;
