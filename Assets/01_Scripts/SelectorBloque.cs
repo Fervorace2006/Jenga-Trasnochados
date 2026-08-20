@@ -21,7 +21,7 @@ public class SelectorBloque : MonoBehaviour
         else if (seleccionado != null && PunteroMantenido()) Arrastrar(PosicionPuntero());
         else if (seleccionado != null && PunteroLiberado()) ColocarEnCima();
     }
-
+    // Se selecciona un bloque si el puntero está sobre él y cumple las condiciones del juego.
     private void Seleccionar(Vector3 puntero)
     {
         if (PunteroSobreInterfaz()) return;
@@ -51,7 +51,7 @@ public class SelectorBloque : MonoBehaviour
         Rigidbody cuerpo = bloque.GetComponent<Rigidbody>();
         if (cuerpo != null) cuerpo.isKinematic = true;
     }
-
+    // Se arrastra el bloque seleccionado según el movimiento del puntero.
     private void Arrastrar(Vector3 puntero)
     {
         Vector3 delta = puntero - ultimoPuntero;
@@ -59,7 +59,7 @@ public class SelectorBloque : MonoBehaviour
         seleccionado.transform.position += (referencia.right * delta.x + referencia.up * delta.y) * sensibilidadArrastre;
         ultimoPuntero = puntero;
     }
-
+    // Se coloca el bloque seleccionado en la cima de la torre y se valida el movimiento.
     private void ColocarEnCima()
     {
         GeneradorTorreJenga torre = GameManager.Instance.generadorTorre;
@@ -72,7 +72,7 @@ public class SelectorBloque : MonoBehaviour
         seleccionado = null;
         GameManager.Instance.MovimientoValido();
     }
-
+    // Se cancela el movimiento del bloque seleccionado y se devuelve a su posición original.
     private void CancelarMovimiento()
     {
         if (seleccionado == null) return;
@@ -83,8 +83,9 @@ public class SelectorBloque : MonoBehaviour
         if (cuerpo != null) cuerpo.isKinematic = true;
         seleccionado = null;
     }
-
+    // Devuelve la posición del puntero (mouse o touch) en la pantalla.
     private static Vector3 PosicionPuntero() => Input.touchCount > 0 ? (Vector3)Input.GetTouch(0).position : Input.mousePosition;
+    // Comprueba si el puntero está sobre un elemento de la interfaz de usuario (UI).
     private static bool PunteroSobreInterfaz()
     {
         if (EventSystem.current == null) return false;
@@ -92,6 +93,7 @@ public class SelectorBloque : MonoBehaviour
             ? EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId)
             : EventSystem.current.IsPointerOverGameObject();
     }
+    // Comprueba si el puntero (mouse o touch) ha sido presionado, mantenido o liberado.
     private static bool PunteroPresionado() => Input.touchCount > 0 ? Input.GetTouch(0).phase == TouchPhase.Began : Input.GetMouseButtonDown(0);
     private static bool PunteroMantenido() => Input.touchCount > 0 ? Input.GetTouch(0).phase == TouchPhase.Moved || Input.GetTouch(0).phase == TouchPhase.Stationary : Input.GetMouseButton(0);
     private static bool PunteroLiberado() => Input.touchCount > 0 ? Input.GetTouch(0).phase == TouchPhase.Ended || Input.GetTouch(0).phase == TouchPhase.Canceled : Input.GetMouseButtonUp(0);

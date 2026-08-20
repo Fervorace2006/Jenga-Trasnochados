@@ -126,6 +126,7 @@ public class GameManager : MonoBehaviour
         return true;
     }
 
+
     //Lanza el dado: elige un color aleatorio y actualiza la UI.
     public void LanzarDado()
     {

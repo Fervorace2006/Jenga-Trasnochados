@@ -21,9 +21,11 @@ public class GeneradorTorreJenga : MonoBehaviour
     private readonly List<BloqueJenga> bloques = new List<BloqueJenga>();
     public IReadOnlyList<BloqueJenga> Bloques => bloques;
 
+    //Construye la torre desde cero. Previene duplicados si existen en escena
     private void Start() => GenerarTorre();
 
     [ContextMenu("Generar Torre")]
+    
     public void GenerarTorre()
     {
         if (bloquePrefab == null) { Debug.LogError("Asigna bloquePrefab en el Inspector."); return; }
@@ -62,6 +64,7 @@ public class GeneradorTorreJenga : MonoBehaviour
         }
     }
 
+    //Se aplica el color al prefab de la base de la mesa usando MaterialPropertyBlock para evitar crear instancias de materiales.
     private void AplicarColorBase()
     {
         Transform baseMesa = transform.Find("BaseMesa");
@@ -77,6 +80,7 @@ public class GeneradorTorreJenga : MonoBehaviour
         renderizador.SetPropertyBlock(propiedades);
     }
 
+    // Devuelve el nivel más alto de la torre que aún tiene bloques sin colocar en la cima.
     public int NivelSuperiorActual()
     {
         int superior = -1;
@@ -85,6 +89,7 @@ public class GeneradorTorreJenga : MonoBehaviour
         return superior;
     }
 
+    // Comprueba si hay algún nivel de la torre sin bloques, lo que indica que la torre está inestable.
     public bool TorreSinSoporte()
     {
         int nivelSuperior = NivelSuperiorActual();
@@ -100,6 +105,7 @@ public class GeneradorTorreJenga : MonoBehaviour
         return false;
     }
 
+    // Activa o desactiva la física de todos los bloques de la torre. Si se desactiva, también se detienen sus velocidades.
     public void EstablecerFisica(bool activa)
     {
         foreach (BloqueJenga bloque in bloques)
@@ -116,6 +122,7 @@ public class GeneradorTorreJenga : MonoBehaviour
         }
     }
 
+    // Devuelve la posición en la cima de la torre para colocar un bloque, y ajusta su orientación y color según corresponda.
     public Vector3 PosicionEnCima(BloqueJenga bloque)
     {
         int colocados = 0;
@@ -133,6 +140,7 @@ public class GeneradorTorreJenga : MonoBehaviour
             : new Vector3(ranura * anchoBloque, posicionY, 0f);
     }
 
+    // Limpia la lista de bloques y destruye los objetos de bloque existentes en la escena.
     public void LimpiarTorre()
     {
         bloques.Clear();
