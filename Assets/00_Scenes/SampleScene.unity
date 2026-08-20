@@ -985,6 +985,14 @@ MonoBehaviour:
   arSeguimientoEstable: 0
   jugadorActual: 1
   juegoTerminado: 0
+  fuenteEfectos: {fileID: 0}
+  fuenteMusica: {fileID: 0}
+  sonidoCaida: {fileID: 8300000, guid: 4168fab531b0172468887562a3ac3938, type: 3}
+  sonidoDado: {fileID: 8300000, guid: d2141fb2ff3f6e24387d48487d83a6ec, type: 3}
+  sonidoReinicio: {fileID: 8300000, guid: e0bc65f1e97553a498414b23ac523faf, type: 3}
+  musicaAmbiente: {fileID: 8300000, guid: df68f2c932d775548811c7012c74884e, type: 3}
+  volumenMusica: 0.2
+  volumenEfectos: 1
   generadorTorre: {fileID: 1981516896}
   textoTurno: {fileID: 1106516112}
   textoEstado: {fileID: 1685341020}
@@ -1050,8 +1058,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e93f9d6cef0f024e81fe62c7aec4cc0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DetectorCaida
-  segundosDeGracia: 1
-  bloquesParaDerribo: 3
 --- !u!64 &1634181627
 MeshCollider:
   m_ObjectHideFlags: 0

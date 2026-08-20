@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
@@ -21,6 +22,24 @@ public class GameManager : MonoBehaviour
     // Arrays estáticos con los nombres y colores de los tres colores posibles.
     private static readonly string[] NombresColores = { "AZUL", "ROJO", "VERDE" };
     // Colores del dado en formato RGBA 
+
+    // SONIDO
+    [Header("Audio")]
+    public AudioSource fuenteEfectos;
+    public AudioSource fuenteMusica;
+
+    public AudioClip sonidoCaida;
+    public AudioClip sonidoDado;
+    public AudioClip sonidoReinicio;
+    public AudioClip musicaAmbiente;
+
+    [Range(0f, 1f)]
+    public float volumenMusica = 0.20f;
+
+    [Range(0f, 1f)]
+    public float volumenEfectos = 1f;
+
+    private bool reiniciando;
     private static readonly Color[] ColoresDado =
     {
         new Color(0.10f, 0.40f, 0.95f, 1f),
@@ -46,7 +65,10 @@ public class GameManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
+
+        PrepararFuentesAudio();
     }
 
     void Start()
@@ -56,6 +78,44 @@ public class GameManager : MonoBehaviour
         if (panelJuegoTerminado != null) panelJuegoTerminado.SetActive(false);
         CrearInterfazDado();
         ActualizarInterfaz();
+        ReproducirMusicaAmbiente();
+    }
+    private void ReproducirMusicaAmbiente()
+    {
+        if (fuenteMusica == null || musicaAmbiente == null)
+            return;
+
+        fuenteMusica.clip = musicaAmbiente;
+        fuenteMusica.loop = true;
+        fuenteMusica.volume = volumenMusica;
+        fuenteMusica.Play();
+    }
+
+    // Crea y configura automáticamente las fuentes si no fueron asignadas
+    // manualmente en el Inspector.
+    private void PrepararFuentesAudio()
+    {
+        if (fuenteEfectos == null)
+            fuenteEfectos = gameObject.AddComponent<AudioSource>();
+
+        if (fuenteMusica == null)
+            fuenteMusica = gameObject.AddComponent<AudioSource>();
+
+        fuenteEfectos.playOnAwake = false;
+        fuenteEfectos.loop = false;
+        fuenteEfectos.spatialBlend = 0f;
+
+        fuenteMusica.playOnAwake = false;
+        fuenteMusica.loop = true;
+        fuenteMusica.spatialBlend = 0f;
+    }
+
+    // PlayOneShot permite reproducir un efecto sin asignarlo como música
+    // principal ni interrumpir inmediatamente otros efectos cortos.
+    private void ReproducirEfecto(AudioClip clip)
+    {
+        if (fuenteEfectos == null || clip == null) return;
+        fuenteEfectos.PlayOneShot(clip, volumenEfectos);
     }
     //Se monitorea la torre para detectar caídas.
     private void Update()
@@ -95,10 +155,11 @@ public class GameManager : MonoBehaviour
         jugadorEnRiesgo = jugadorActual;
         huboMovimiento = true;
 
-        // En AR la física continua se vuelve inestable porque el marcador
-        // reajusta el origen. Solo derribamos físicamente la torre si un nivel
-        // quedó completamente sin soporte.
-        if (generadorTorre != null && generadorTorre.TorreSinSoporte())
+        // En AR no mantenemos la física activa continuamente porque los
+        // reajustes del marcador pueden mover la torre. Después de cada jugada
+        // comprobamos el soporte: un nivel vacío o un único bloque lateral
+        // deja el centro de masa sin apoyo y activa la caída física.
+        if (generadorTorre != null && generadorTorre.TorreInestable())
         {
             generadorTorre.EstablecerFisica(true);
             JugadorPerdio();
@@ -131,6 +192,7 @@ public class GameManager : MonoBehaviour
     public void LanzarDado()
     {
         if (juegoTerminado || colorDado >= 0) return;
+        ReproducirEfecto(sonidoDado);
         colorDado = Random.Range(0, NombresColores.Length);
         if (textoDado != null)
         {
@@ -215,6 +277,9 @@ public class GameManager : MonoBehaviour
 
         juegoTerminado = true;
 
+        ReproducirEfecto(sonidoCaida);
+        if (fuenteMusica != null) fuenteMusica.Stop();
+
         if (panelJuegoTerminado != null)
             panelJuegoTerminado.SetActive(true);
 
@@ -232,6 +297,22 @@ public class GameManager : MonoBehaviour
 
     public void ReiniciarPartida()
     {
+        if (!reiniciando) StartCoroutine(ReiniciarConSonido());
+    }
+
+    // Espera un momento antes de recargar la escena; de lo contrario, el
+    // AudioSource se destruiría inmediatamente y el efecto quedaría cortado.
+    private IEnumerator ReiniciarConSonido()
+    {
+        reiniciando = true;
+        if (fuenteMusica != null) fuenteMusica.Stop();
+        ReproducirEfecto(sonidoReinicio);
+
+        float espera = sonidoReinicio != null
+            ? Mathf.Min(sonidoReinicio.length, 1.5f)
+            : 0f;
+        yield return new WaitForSecondsRealtime(espera);
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 

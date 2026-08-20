@@ -89,21 +89,71 @@ public class GeneradorTorreJenga : MonoBehaviour
         return superior;
     }
 
-    // Comprueba si hay algún nivel de la torre sin bloques, lo que indica que la torre está inestable.
-    public bool TorreSinSoporte()
+    // Indica si el bloque pertenece al piso físicamente más alto que existe
+    // en este momento. Se usa la altura real y no el nivel original, porque
+    // una pieza colocada en la cima deja de ser el último piso cuando después
+    // se construye otro nivel encima.
+    public bool EstaEnPisoSuperior(BloqueJenga bloqueConsultado)
+    {
+        if (bloqueConsultado == null) return false;
+
+        float alturaSuperior = float.NegativeInfinity;
+        foreach (BloqueJenga bloque in bloques)
+        {
+            if (bloque == null) continue;
+            alturaSuperior = Mathf.Max(alturaSuperior, bloque.transform.localPosition.y);
+        }
+
+        // La tolerancia agrupa como un mismo piso los bloques cuyas alturas
+        // puedan diferir unos milímetros por redondeo o por la física.
+        float tolerancia = altoBloque * 0.35f;
+        return bloqueConsultado.transform.localPosition.y >= alturaSuperior - tolerancia;
+    }
+
+    // Comprueba si el peso de la torre perdió su apoyo. Un nivel es inestable
+    // cuando queda vacío o cuando solo conserva un bloque situado a un lado.
+    // Un único bloque central todavía puede sostener el centro de la torre.
+    public bool TorreInestable()
     {
         int nivelSuperior = NivelSuperiorActual();
         for (int nivel = 0; nivel < nivelSuperior; nivel++)
         {
             int bloquesEnNivel = 0;
-            foreach (BloqueJenga bloque in bloques)
-                if (bloque != null && !bloque.colocadoEnLaCima && bloque.nivel == nivel)
-                    bloquesEnNivel++;
+            BloqueJenga unicoBloque = null;
 
+            foreach (BloqueJenga bloque in bloques)
+            {
+                if (bloque != null && !bloque.colocadoEnLaCima && bloque.nivel == nivel)
+                {
+                    bloquesEnNivel++;
+                    unicoBloque = bloque;
+                }
+            }
+
+            // No existe ninguna superficie que sostenga los niveles superiores.
             if (bloquesEnNivel == 0) return true;
+
+            if (bloquesEnNivel == 1 && unicoBloque != null)
+            {
+                // Los niveles pares están distribuidos sobre el eje Z y los
+                // impares sobre X. El bloque central tiene desplazamiento 0;
+                // los laterales están aproximadamente a +/- anchoBloque.
+                float desplazamiento = nivel % 2 == 0
+                    ? unicoBloque.transform.localPosition.z
+                    : unicoBloque.transform.localPosition.x;
+
+                // Si el único apoyo está fuera del centro, el centro de masa
+                // de todo lo que queda arriba ya no descansa sobre ese bloque.
+                if (Mathf.Abs(desplazamiento) > anchoBloque * 0.5f)
+                    return true;
+            }
         }
         return false;
     }
+
+    // Se conserva este nombre por compatibilidad con posibles botones,
+    // eventos o scripts antiguos que todavía lo utilicen.
+    public bool TorreSinSoporte() => TorreInestable();
 
     // Activa o desactiva la física de todos los bloques de la torre. Si se desactiva, también se detienen sus velocidades.
     public void EstablecerFisica(bool activa)
@@ -122,17 +172,72 @@ public class GeneradorTorreJenga : MonoBehaviour
         }
     }
 
-    // Devuelve la posición en la cima de la torre para colocar un bloque, y ajusta su orientación y color según corresponda.
+    // Busca una ranura realmente libre en el piso superior. Esto evita que dos
+    // bloques terminen superpuestos cuando se vuelve a mover una pieza que ya
+    // había sido colocada en la cima durante un turno anterior.
     public Vector3 PosicionEnCima(BloqueJenga bloque)
     {
-        int colocados = 0;
-        foreach (BloqueJenga otro in bloques)
-            if (otro != null && otro != bloque && otro.colocadoEnLaCima) colocados++;
+        float mitadAlto = altoBloque * 0.5f;
+        float alturaSuperior = float.NegativeInfinity;
 
-        int ranura = colocados % 3 - 1;
-        int capaNueva = colocados / 3;
-        float posicionY = numeroNiveles * altoBloque + capaNueva * altoBloque + altoBloque * 0.5f;
-        bool orientarEnX = (numeroNiveles + capaNueva) % 2 == 0;
+        // Primero localizamos el piso más alto, ignorando la pieza que se está
+        // moviendo porque dejará de ocupar su posición anterior.
+        foreach (BloqueJenga otro in bloques)
+        {
+            if (otro == null || otro == bloque) continue;
+            alturaSuperior = Mathf.Max(alturaSuperior, otro.transform.localPosition.y);
+        }
+
+        int pisoSuperior = alturaSuperior > float.NegativeInfinity
+            ? Mathf.RoundToInt((alturaSuperior - mitadAlto) / altoBloque)
+            : -1;
+        float toleranciaAltura = altoBloque * 0.35f;
+        int bloquesEnPisoSuperior = 0;
+
+        foreach (BloqueJenga otro in bloques)
+        {
+            if (otro == null || otro == bloque) continue;
+            if (Mathf.Abs(otro.transform.localPosition.y - alturaSuperior) <= toleranciaAltura)
+                bloquesEnPisoSuperior++;
+        }
+
+        // Si arriba ya hay tres piezas, comenzamos un piso nuevo. Si hay una
+        // o dos, completamos primero las ranuras libres de ese mismo piso.
+        int pisoDestino = bloquesEnPisoSuperior >= 3 ? pisoSuperior + 1 : pisoSuperior;
+        bool orientarEnX = pisoDestino % 2 == 0;
+        bool[] ranurasOcupadas = new bool[3];
+
+        if (pisoDestino == pisoSuperior)
+        {
+            foreach (BloqueJenga otro in bloques)
+            {
+                if (otro == null || otro == bloque) continue;
+                if (Mathf.Abs(otro.transform.localPosition.y - alturaSuperior) > toleranciaAltura) continue;
+
+                float desplazamiento = orientarEnX
+                    ? otro.transform.localPosition.z
+                    : otro.transform.localPosition.x;
+                int indiceRanura = Mathf.RoundToInt(desplazamiento / anchoBloque) + 1;
+                if (indiceRanura >= 0 && indiceRanura < ranurasOcupadas.Length)
+                    ranurasOcupadas[indiceRanura] = true;
+            }
+        }
+
+        int ranuraLibre = 0;
+        while (ranuraLibre < ranurasOcupadas.Length && ranurasOcupadas[ranuraLibre])
+            ranuraLibre++;
+
+        // Protección adicional ante posiciones inesperadas: si las tres
+        // ranuras aparecen ocupadas, iniciamos el siguiente piso.
+        if (ranuraLibre >= ranurasOcupadas.Length)
+        {
+            pisoDestino++;
+            orientarEnX = pisoDestino % 2 == 0;
+            ranuraLibre = 0;
+        }
+
+        int ranura = ranuraLibre - 1;
+        float posicionY = pisoDestino * altoBloque + mitadAlto;
         bloque.transform.localRotation = orientarEnX ? Quaternion.identity : Quaternion.Euler(0f, 90f, 0f);
         bloque.EstablecerColor(ColoresMadera[bloque.indiceColor]);
         return orientarEnX

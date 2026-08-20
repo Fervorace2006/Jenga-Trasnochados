@@ -35,7 +35,10 @@ public class SelectorBloque : MonoBehaviour
             GameManager.Instance.MovimientoInvalido(motivoColor);
             return;
         }
-        if (bloque.colocadoEnLaCima || bloque.nivel >= torre.NivelSuperiorActual())
+        // Solo se prohíbe retirar piezas del piso que está físicamente más
+        // arriba. El penúltimo piso sí es válido, aunque sus piezas hayan sido
+        // colocadas en la cima durante turnos anteriores.
+        if (torre.EstaEnPisoSuperior(bloque))
         {
             GameManager.Instance.MovimientoInvalido("No se puede retirar un bloque del nivel superior.");
             return;
